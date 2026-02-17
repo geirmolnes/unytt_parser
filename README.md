@@ -44,7 +44,7 @@ unytt_parser/
   parser.py                 # Top-level parse_source / parse_sources
   __main__.py               # CLI entrypoint (unytt-parse)
   parsers/
-    url_parser.py           # URL parsing with trafilatura -> markdown
+    url_parser.py           # URL parsing with trafilatura -> markdown (includes Labrador CMS fix)
     pdf_parser.py           # PDF parsing with pymupdf4llm -> markdown
     markdown_parser.py      # Markdown input (file path or raw markdown string)
     text_parser.py          # Raw text passthrough as markdown
@@ -149,6 +149,10 @@ After install/sync:
 uv run unytt-parse "https://example.com/article"
 uv run unytt-parse "/tmp/article.pdf" "/tmp/notes.md" "plain text source"
 ```
+
+## CMS-Specific Handling
+
+**Labrador CMS** (khrono.no, dagbladet.no, utdanningsnytt.no, fagbladet.no, etc.): These pages often have 10+ sidebar `<article>` tags that confuse trafilatura's content detection. The parser detects Labrador pages via the `labClientAPI` marker and isolates the main article from `#mainArticleSection` before extraction. Metadata extraction still uses the full HTML.
 
 ## Source-Type Detection
 

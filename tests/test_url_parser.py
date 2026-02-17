@@ -1,4 +1,5 @@
 from unytt_parser.parsers import url_parser
+from unytt_parser.parsers.url_parser import _extract_labrador_article
 from unytt_parser.models import SourceType
 
 
@@ -49,3 +50,66 @@ def test_parse_url_empty_body_surfaces_error(monkeypatch):
 
     assert parsed.error is not None
     assert "No article content extracted" in parsed.error
+
+
+def test_extract_labrador_article_isolates_main():
+    html = """
+    <html><body>
+    <script>var labClientAPI = {};</script>
+    <section id="mainArticleSection">
+      <article><p>Main article content here.</p></article>
+    </section>
+    <aside>
+      <article><p>Sidebar item 1</p></article>
+      <article><p>Sidebar item 2</p></article>
+    </aside>
+    </body></html>
+    """
+    result = _extract_labrador_article(html)
+    assert result is not None
+    assert "Main article content here" in result
+    assert "Sidebar item" not in result
+
+
+def test_extract_labrador_article_returns_none_for_non_labrador():
+    assert _extract_labrador_article("<html><body>Normal page</body></html>") is None
+
+
+def test_parse_url_uses_labrador_extraction(monkeypatch):
+    labrador_html = """
+    <html><body>
+    <script>var labClientAPI = {};</script>
+    <section id="mainArticleSection">
+      <article><p>Real article body.</p></article>
+    </section>
+    <aside>
+      <article><p>Sidebar noise</p></article>
+    </aside>
+    </body></html>
+    """
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda _: labrador_html)
+    monkeypatch.setattr(url_parser.trafilatura, "extract_metadata", lambda _: _DummyMeta())
+
+    # Use real trafilatura.extract so we verify narrowed HTML is passed
+    parsed = url_parser.parse_url("https://example.com/labrador-article")
+
+    assert parsed.error is None
+    assert "Sidebar noise" not in (parsed.markdown or "")
+    assert "Real article body" in (parsed.markdown or "")
+
+
+def test_extract_labrador_article_direct_article_tag():
+    """Dagbladet-style: <article id='mainArticleSection'> (no wrapping section)."""
+    html = """
+    <html><body>
+    <script>var labClientAPI = {};</script>
+    <article id="mainArticleSection"><p>Dagbladet article.</p></article>
+    <aside>
+      <article><p>Sidebar item</p></article>
+    </aside>
+    </body></html>
+    """
+    result = _extract_labrador_article(html)
+    assert result is not None
+    assert "Dagbladet article" in result
+    assert "Sidebar item" not in result
