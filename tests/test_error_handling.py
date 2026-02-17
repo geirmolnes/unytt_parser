@@ -1,7 +1,7 @@
-from src import parser
-from src.models import ParsedSource, SourceType
-from src.parsers import pdf_parser, url_parser
-from src.parsers.text_parser import parse_text
+from unytt_parser import parser
+from unytt_parser.models import ParsedSource, SourceType
+from unytt_parser.parsers import pdf_parser, url_parser
+from unytt_parser.parsers.text_parser import parse_text
 
 
 def test_url_fetch_failure_returns_error(monkeypatch):

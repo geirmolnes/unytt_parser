@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from src import parser
-from src.models import SourceType
+from unytt_parser import parser
+from unytt_parser.models import SourceType
 
 TEST_DATA_DIR = Path(__file__).parent / "test_data"
 

@@ -1,5 +1,5 @@
-from src.parsers import url_parser
-from src.models import SourceType
+from unytt_parser.parsers import url_parser
+from unytt_parser.models import SourceType
 
 
 class _DummyMeta:

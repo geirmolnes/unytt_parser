@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from src.models import ParsedSource, SourceBundle, SourceType
-from src.parsers.markdown_parser import parse_markdown
-from src.parsers.pdf_parser import parse_pdf
-from src.parsers.text_parser import parse_text
-from src.parsers.url_parser import parse_url
+from unytt_parser.models import ParsedSource, SourceBundle, SourceType
+from unytt_parser.parsers.markdown_parser import parse_markdown
+from unytt_parser.parsers.pdf_parser import parse_pdf
+from unytt_parser.parsers.text_parser import parse_text
+from unytt_parser.parsers.url_parser import parse_url
 
 
 def detect_source_type(source_input: str) -> SourceType:

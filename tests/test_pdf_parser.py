@@ -1,5 +1,5 @@
-from src.models import SourceType
-from src.parsers import pdf_parser
+from unytt_parser.models import SourceType
+from unytt_parser.parsers import pdf_parser
 
 
 def test_parse_pdf_success(monkeypatch):

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pymupdf4llm
 
-from src.models import ParsedSource, SourceType
-from src.parsers.utils import first_markdown_heading
+from unytt_parser.models import ParsedSource, SourceType
+from unytt_parser.parsers.utils import first_markdown_heading
 
 
 def parse_pdf(pdf_path: str, source_id: str | None = None) -> ParsedSource:

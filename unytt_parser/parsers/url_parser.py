@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 import trafilatura
 
-from src.models import ParsedSource, SourceType
+from unytt_parser.models import ParsedSource, SourceType
 
 
 def _metadata_value(metadata: object, key: str) -> str | None:

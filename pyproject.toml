@@ -13,6 +13,9 @@ dependencies = [
   "pymupdf4llm",
 ]
 
+[project.scripts]
+unytt-parse = "unytt_parser.__main__:main"
+
 [dependency-groups]
 dev = [
   "pytest",
@@ -29,4 +32,4 @@ filterwarnings = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["unytt_parser"]

@@ -1,5 +1,5 @@
-from src.models import SourceType
-from src.parsers import text_parser
+from unytt_parser.models import SourceType
+from unytt_parser.parsers import text_parser
 
 
 def test_parse_text_success():

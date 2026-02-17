@@ -4,8 +4,8 @@ import os
 
 import pytest
 
-from src.models import SourceType
-from src.parsers.url_parser import parse_url
+from unytt_parser.models import SourceType
+from unytt_parser.parsers.url_parser import parse_url
 
 LIVE_TEST_ENV_VAR = "UNYTT_RUN_LIVE_URL_TESTS"
 ARTICLE_MIN_MARKDOWN_LEN = 300

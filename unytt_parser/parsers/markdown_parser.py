@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.models import ParsedSource, SourceType
-from src.parsers.utils import first_markdown_heading
+from unytt_parser.models import ParsedSource, SourceType
+from unytt_parser.parsers.utils import first_markdown_heading
 
 
 def parse_markdown(markdown_input: str, source_id: str | None = None) -> ParsedSource:

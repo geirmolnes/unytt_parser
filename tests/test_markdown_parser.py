@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from src.models import SourceType
-from src.parsers import markdown_parser
+from unytt_parser.models import SourceType
+from unytt_parser.parsers import markdown_parser
 
 
 def test_parse_markdown_from_file(tmp_path: Path):

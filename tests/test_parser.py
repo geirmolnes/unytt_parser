@@ -1,5 +1,5 @@
-from src import parser
-from src.models import ParsedSource, SourceType
+from unytt_parser import parser
+from unytt_parser.models import ParsedSource, SourceType
 
 
 def _mk(source_id: str, source_type: SourceType, source: str) -> ParsedSource:

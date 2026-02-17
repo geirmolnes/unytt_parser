@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.models import ParsedSource, SourceType
+from unytt_parser.models import ParsedSource, SourceType
 
 
 def parse_text(text: str, source_id: str | None = None) -> ParsedSource:

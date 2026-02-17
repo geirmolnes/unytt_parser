@@ -1,4 +1,4 @@
-from src.models import ParsedSource, SourceBundle, SourceType
+from unytt_parser.models import ParsedSource, SourceBundle, SourceType
 
 
 def test_source_type_enum_values():

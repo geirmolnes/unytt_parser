@@ -28,12 +28,21 @@ The parser currently focuses on one core output: Markdown-formatted text.
 uv sync
 ```
 
+## Use In Another Project (Editable)
+
+Use this while the API is still changing:
+
+```bash
+uv add --editable /Users/geirmolnes/unytt/unytt_parser
+```
+
 ## Project Structure
 
 ```text
-src/
+unytt_parser/
   models.py                 # Pydantic models and enums
   parser.py                 # Top-level parse_source / parse_sources
+  __main__.py               # CLI entrypoint (unytt-parse)
   parsers/
     url_parser.py           # URL parsing with trafilatura -> markdown
     pdf_parser.py           # PDF parsing with pymupdf4llm -> markdown
@@ -42,10 +51,79 @@ src/
 tests/
 ```
 
+## Output
+
+`parse_source()` returns a `ParsedSource`, `parse_sources()` returns a `SourceBundle`.
+
+```python
+class ParsedSource:
+    source_id: str            # caller-provided; defaults to "source-1"
+    source_type: SourceType   # URL | PDF | MARKDOWN | TEXT
+    source: str               # original input string
+    headline: str | None      # first heading or extracted title
+    byline: str | None        # author (URL only, via trafilatura)
+    publication_date: str | None  # date (URL only, via trafilatura)
+    publication: str | None   # site name (URL only, via trafilatura)
+    markdown: str | None      # full content converted to markdown
+    error: str | None         # error message if parsing failed
+
+class SourceBundle:
+    sources: list[ParsedSource]  # parse_sources() uses source-1..source-N
+```
+
+Metadata fields (`byline`, `publication_date`, `publication`) are only populated for URL sources. `headline` is extracted from the first markdown heading for PDF/Markdown sources, or from trafilatura metadata for URLs. On parse failures, `error` is set and `markdown` is usually `None` (for empty text/markdown input, the original empty content is preserved in `markdown`).
+
+Example `parse_source("plain text input")` output:
+
+```json
+{
+  "source_id": "source-1",
+  "source_type": "TEXT",
+  "source": "plain text input",
+  "headline": null,
+  "byline": null,
+  "publication_date": null,
+  "publication": null,
+  "markdown": "plain text input",
+  "error": null
+}
+```
+
+Example `parse_sources(["a", "b"])` output shape:
+
+```json
+{
+  "sources": [
+    {
+      "source_id": "source-1",
+      "source_type": "TEXT",
+      "source": "a",
+      "headline": null,
+      "byline": null,
+      "publication_date": null,
+      "publication": null,
+      "markdown": "a",
+      "error": null
+    },
+    {
+      "source_id": "source-2",
+      "source_type": "TEXT",
+      "source": "b",
+      "headline": null,
+      "byline": null,
+      "publication_date": null,
+      "publication": null,
+      "markdown": "b",
+      "error": null
+    }
+  ]
+}
+```
+
 ## Quick Usage
 
 ```python
-from src.parser import parse_source, parse_sources
+from unytt_parser import parse_source, parse_sources
 
 # Single input
 single = parse_source("https://example.com/article")
@@ -61,6 +139,15 @@ bundle = parse_sources([
 
 for item in bundle.sources:
     print(item.source_id, item.source_type, bool(item.markdown), item.error)
+```
+
+## CLI Usage
+
+After install/sync:
+
+```bash
+uv run unytt-parse "https://example.com/article"
+uv run unytt-parse "/tmp/article.pdf" "/tmp/notes.md" "plain text source"
 ```
 
 ## Source-Type Detection
