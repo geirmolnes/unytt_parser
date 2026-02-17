@@ -2,21 +2,10 @@
 
 from __future__ import annotations
 
-import re
-
 import pymupdf4llm
 
 from src.models import ParsedSource, SourceType
-
-HEADING_PATTERN = re.compile(r"^\s*#{1,6}\s+(.+?)\s*$", re.MULTILINE)
-
-
-def _first_markdown_heading(markdown: str) -> str | None:
-    match = HEADING_PATTERN.search(markdown)
-    if not match:
-        return None
-    heading = match.group(1).strip()
-    return heading or None
+from src.parsers.utils import first_markdown_heading
 
 
 def parse_pdf(pdf_path: str, source_id: str | None = None) -> ParsedSource:
@@ -31,7 +20,7 @@ def parse_pdf(pdf_path: str, source_id: str | None = None) -> ParsedSource:
             result.error = f"No text extracted from PDF: {pdf_path}"
             return result
 
-        result.headline = _first_markdown_heading(markdown)
+        result.headline = first_markdown_heading(markdown)
         result.markdown = markdown
         return result
     except Exception as exc:

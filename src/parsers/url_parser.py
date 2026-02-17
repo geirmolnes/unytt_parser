@@ -10,6 +10,7 @@ from src.models import ParsedSource, SourceType
 
 
 def _metadata_value(metadata: object, key: str) -> str | None:
+    """Extract metadata field. Handles dict and object since trafilatura returns different types across versions."""
     if metadata is None:
         return None
     if isinstance(metadata, dict):

@@ -865,18 +865,26 @@ source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
     { name = "pymupdf4llm" },
+    { name = "trafilatura" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
-    { name = "trafilatura" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pymupdf4llm" },
+    { name = "trafilatura" },
+]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
-    { name = "trafilatura" },
 ]
 
 [[package]]

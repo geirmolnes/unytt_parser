@@ -28,7 +28,7 @@ def parse_source(source_input: str, source_id: str | None = None) -> ParsedSourc
     """Parse one source input and return a ParsedSource result."""
 
     source_id = source_id or "source-1"
-    raw_input = source_input if isinstance(source_input, str) else str(source_input)
+    raw_input = source_input
     source_type = detect_source_type(raw_input)
     try:
         if source_type == SourceType.URL:
