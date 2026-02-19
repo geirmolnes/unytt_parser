@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
+import urllib.request
+from pathlib import Path
 from urllib.parse import urlparse
 
 import lxml.html
@@ -9,6 +12,7 @@ import trafilatura
 from lxml.html import tostring as html_tostring
 
 from unytt_parser.models import ParsedSource, SourceType
+from unytt_parser.parsers.pdf_parser import parse_pdf
 
 
 def _extract_labrador_article(html: str) -> str | None:
@@ -45,10 +49,39 @@ def _metadata_value(metadata: object, key: str) -> str | None:
     return value_str or None
 
 
+def _try_pdf_url(url: str, source_id: str) -> ParsedSource | None:
+    """If URL serves a PDF, download and parse it. Returns None for non-PDF content."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            content_type = resp.headers.get("Content-Type", "")
+            if "application/pdf" not in content_type:
+                return None
+            pdf_bytes = resp.read()
+    except Exception:
+        return None
+
+    tmp = Path(tempfile.mktemp(suffix=".pdf"))
+    try:
+        tmp.write_bytes(pdf_bytes)
+        result = parse_pdf(str(tmp), source_id=source_id)
+        result.source = url
+        result.pdf_bytes = pdf_bytes
+        result.publication = urlparse(url).netloc or None
+        return result
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def parse_url(url: str, source_id: str | None = None) -> ParsedSource:
     """Parse one URL into structured source data."""
 
     source_id = source_id or "source-1"
+
+    pdf_result = _try_pdf_url(url, source_id)
+    if pdf_result:
+        return pdf_result
+
     result = ParsedSource(source_id=source_id, source_type=SourceType.URL, source=url)
     try:
         downloaded = trafilatura.fetch_url(url)

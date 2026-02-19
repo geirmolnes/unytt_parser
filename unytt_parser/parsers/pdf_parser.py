@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pymupdf4llm
 
 from unytt_parser.models import ParsedSource, SourceType
@@ -14,6 +16,7 @@ def parse_pdf(pdf_path: str, source_id: str | None = None) -> ParsedSource:
     source_id = source_id or "source-1"
     result = ParsedSource(source_id=source_id, source_type=SourceType.PDF, source=pdf_path)
     try:
+        result.pdf_bytes = Path(pdf_path).read_bytes()
         markdown = pymupdf4llm.to_markdown(pdf_path) or ""
         markdown = markdown.strip()
         if not markdown:

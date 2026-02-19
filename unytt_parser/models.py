@@ -27,6 +27,7 @@ class ParsedSource(BaseModel):
     publication_date: str | None = None
     publication: str | None = None
     markdown: str | None = None
+    pdf_bytes: bytes | None = None
     error: str | None = None
 
 

@@ -15,6 +15,8 @@ The parser currently focuses on one core output: Markdown-formatted text.
 - Auto-detect source type (`URL`, `PDF`, `MARKDOWN`, `TEXT`)
 - Return parsed markdown in `ParsedSource.markdown`
 - Keep metadata when available (`headline`, `byline`, `publication_date`, `publication`)
+- Preserve raw PDF bytes in `ParsedSource.pdf_bytes` for archival
+- Transparently handle PDF URLs (content-type detection, download, PDF extraction)
 - Surface clear errors without dropping sources
 
 ## Requirements
@@ -44,8 +46,8 @@ unytt_parser/
   parser.py                 # Top-level parse_source / parse_sources
   __main__.py               # CLI entrypoint (unytt-parse)
   parsers/
-    url_parser.py           # URL parsing with trafilatura -> markdown (includes Labrador CMS fix)
-    pdf_parser.py           # PDF parsing with pymupdf4llm -> markdown
+    url_parser.py           # URL parsing with trafilatura -> markdown (includes Labrador CMS fix + PDF URL detection)
+    pdf_parser.py           # PDF parsing with pymupdf4llm -> markdown (preserves raw bytes)
     markdown_parser.py      # Markdown input (file path or raw markdown string)
     text_parser.py          # Raw text passthrough as markdown
 tests/
@@ -59,19 +61,20 @@ tests/
 class ParsedSource:
     source_id: str            # caller-provided; defaults to "source-1"
     source_type: SourceType   # URL | PDF | MARKDOWN | TEXT
-    source: str               # original input string
+    source: str               # original input (file path or URL)
     headline: str | None      # first heading or extracted title
     byline: str | None        # author (URL only, via trafilatura)
     publication_date: str | None  # date (URL only, via trafilatura)
-    publication: str | None   # site name (URL only, via trafilatura)
+    publication: str | None   # site name (URL only; domain for PDF URLs)
     markdown: str | None      # full content converted to markdown
+    pdf_bytes: bytes | None   # raw PDF file bytes (PDF sources only)
     error: str | None         # error message if parsing failed
 
 class SourceBundle:
     sources: list[ParsedSource]  # parse_sources() uses source-1..source-N
 ```
 
-Metadata fields (`byline`, `publication_date`, `publication`) are only populated for URL sources. `headline` is extracted from the first markdown heading for PDF/Markdown sources, or from trafilatura metadata for URLs. On parse failures, `error` is set and `markdown` is usually `None` (for empty text/markdown input, the original empty content is preserved in `markdown`).
+Metadata fields (`byline`, `publication_date`, `publication`) are only populated for URL sources. `headline` is extracted from the first markdown heading for PDF/Markdown sources, or from trafilatura metadata for URLs. `pdf_bytes` contains the raw file bytes for PDF sources (both local files and PDF URLs). On parse failures, `error` is set and `markdown` is usually `None` (for empty text/markdown input, the original empty content is preserved in `markdown`).
 
 Example `parse_source("plain text input")` output:
 
@@ -85,6 +88,7 @@ Example `parse_source("plain text input")` output:
   "publication_date": null,
   "publication": null,
   "markdown": "plain text input",
+  "pdf_bytes": null,
   "error": null
 }
 ```
@@ -103,6 +107,7 @@ Example `parse_sources(["a", "b"])` output shape:
       "publication_date": null,
       "publication": null,
       "markdown": "a",
+      "pdf_bytes": null,
       "error": null
     },
     {
@@ -114,6 +119,7 @@ Example `parse_sources(["a", "b"])` output shape:
       "publication_date": null,
       "publication": null,
       "markdown": "b",
+      "pdf_bytes": null,
       "error": null
     }
   ]
@@ -160,6 +166,8 @@ uv run unytt-parse "/tmp/article.pdf" "/tmp/notes.md" "plain text source"
 - Ends with `.pdf` (case-insensitive) -> `PDF`
 - Ends with `.md` or `.markdown` (case-insensitive) -> `MARKDOWN`
 - Otherwise -> `TEXT`
+
+**PDF URLs**: When a URL serves `application/pdf` content-type, the parser downloads the PDF, extracts text via pymupdf4llm, and returns `source_type=PDF` with `source` set to the original URL and `publication` set to the domain. The raw bytes are preserved in `pdf_bytes`.
 
 ## Error Handling
 
