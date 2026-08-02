@@ -73,18 +73,25 @@ def _try_pdf_url(url: str, source_id: str) -> ParsedSource | None:
         tmp.unlink(missing_ok=True)
 
 
-def parse_url(url: str, source_id: str | None = None) -> ParsedSource:
-    """Parse one URL into structured source data."""
+def parse_url(url: str, source_id: str | None = None, html: str | None = None) -> ParsedSource:
+    """Parse one URL into structured source data.
+
+    Pass `html` when the caller already holds the page — e.g. it fetched the
+    URL through an authenticated session to get past a paywall. The download
+    step is then skipped; everything downstream (metadata, extraction) is
+    identical, so callers keep one code path for free and paid sources.
+    """
 
     source_id = source_id or "source-1"
 
-    pdf_result = _try_pdf_url(url, source_id)
-    if pdf_result:
-        return pdf_result
+    if html is None:
+        pdf_result = _try_pdf_url(url, source_id)
+        if pdf_result:
+            return pdf_result
 
     result = ParsedSource(source_id=source_id, source_type=SourceType.URL, source=url)
     try:
-        downloaded = trafilatura.fetch_url(url)
+        downloaded = html if html is not None else trafilatura.fetch_url(url)
         if not downloaded:
             result.error = f"Failed to fetch URL: {url}"
             return result

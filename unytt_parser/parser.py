@@ -24,15 +24,22 @@ def detect_source_type(source_input: str) -> SourceType:
     return SourceType.TEXT
 
 
-def parse_source(source_input: str, source_id: str | None = None) -> ParsedSource:
-    """Parse one source input and return a ParsedSource result."""
+def parse_source(
+    source_input: str, source_id: str | None = None, html: str | None = None
+) -> ParsedSource:
+    """Parse one source input and return a ParsedSource result.
+
+    `html` is only meaningful for URL inputs: supply the already-downloaded
+    page (an authenticated fetch, a cached copy) and the parser will use it
+    instead of downloading anonymously.
+    """
 
     source_id = source_id or "source-1"
     raw_input = source_input
     source_type = detect_source_type(raw_input)
     try:
         if source_type == SourceType.URL:
-            return parse_url(raw_input, source_id=source_id)
+            return parse_url(raw_input, source_id=source_id, html=html)
         if source_type == SourceType.PDF:
             return parse_pdf(raw_input, source_id=source_id)
         if source_type == SourceType.MARKDOWN:
