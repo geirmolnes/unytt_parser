@@ -11,7 +11,7 @@ class _DummyMeta:
 
 
 def test_parse_url_success(monkeypatch):
-    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda _: "<html>ok</html>")
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda url, **kwargs: "<html>ok</html>")
     monkeypatch.setattr(url_parser.trafilatura, "extract_metadata", lambda _: _DummyMeta())
     monkeypatch.setattr(
         url_parser.trafilatura,
@@ -32,7 +32,7 @@ def test_parse_url_success(monkeypatch):
 
 
 def test_parse_url_fetch_failure(monkeypatch):
-    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda _: None)
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda url, **kwargs: None)
 
     parsed = url_parser.parse_url("https://example.com/missing", source_id="source-2")
 
@@ -42,7 +42,7 @@ def test_parse_url_fetch_failure(monkeypatch):
 
 
 def test_parse_url_empty_body_surfaces_error(monkeypatch):
-    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda _: "<html>ok</html>")
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda url, **kwargs: "<html>ok</html>")
     monkeypatch.setattr(url_parser.trafilatura, "extract_metadata", lambda _: _DummyMeta())
     monkeypatch.setattr(url_parser.trafilatura, "extract", lambda *args, **kwargs: "   ")
 
@@ -87,7 +87,7 @@ def test_parse_url_uses_labrador_extraction(monkeypatch):
     </aside>
     </body></html>
     """
-    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda _: labrador_html)
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda url, **kwargs: labrador_html)
     monkeypatch.setattr(url_parser.trafilatura, "extract_metadata", lambda _: _DummyMeta())
 
     # Use real trafilatura.extract so we verify narrowed HTML is passed
@@ -113,3 +113,31 @@ def test_extract_labrador_article_direct_article_tag():
     assert result is not None
     assert "Dagbladet article" in result
     assert "Sidebar item" not in result
+
+
+def test_parse_url_fetches_with_cloudflare_safe_user_agent(monkeypatch):
+    """Regression: arabnews.com (Cloudflare) 403s trafilatura's default UA."""
+    seen: dict[str, object] = {}
+
+    def _fetch(url: str, **kwargs):
+        seen["config"] = kwargs.get("config")
+        return None
+
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", _fetch)
+    url_parser.parse_url("https://example.com/cloudflare")
+
+    assert seen["config"].get("DEFAULT", "USER_AGENTS") == "Mozilla/5.0"
+
+
+def test_pdf_probe_sends_same_user_agent(monkeypatch):
+    seen: dict[str, object] = {}
+
+    def _urlopen(req, timeout=None):
+        seen["ua"] = req.get_header("User-agent")
+        raise OSError("offline")
+
+    monkeypatch.setattr(url_parser.urllib.request, "urlopen", _urlopen)
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda url, **kwargs: None)
+    url_parser.parse_url("https://example.com/maybe-pdf")
+
+    assert seen["ua"] == "Mozilla/5.0"

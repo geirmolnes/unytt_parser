@@ -4,15 +4,24 @@ from __future__ import annotations
 
 import tempfile
 import urllib.request
+from copy import deepcopy
 from pathlib import Path
 from urllib.parse import urlparse
 
 import lxml.html
 import trafilatura
 from lxml.html import tostring as html_tostring
+from trafilatura.settings import DEFAULT_CONFIG
 
 from unytt_parser.models import ParsedSource, SourceType
 from unytt_parser.parsers.pdf_parser import parse_pdf
+
+# Bare "Mozilla/5.0" passes Cloudflare's bot check. trafilatura's default UA gets a
+# 403 JS challenge, and full browser UAs are rejected as a UA/TLS-fingerprint
+# mismatch (seen on arabnews.com).
+_USER_AGENT = "Mozilla/5.0"
+_TRAFILATURA_CONFIG = deepcopy(DEFAULT_CONFIG)
+_TRAFILATURA_CONFIG.set("DEFAULT", "USER_AGENTS", _USER_AGENT)
 
 
 def _extract_labrador_article(html: str) -> str | None:
@@ -52,7 +61,7 @@ def _metadata_value(metadata: object, key: str) -> str | None:
 def _try_pdf_url(url: str, source_id: str) -> ParsedSource | None:
     """If URL serves a PDF, download and parse it. Returns None for non-PDF content."""
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
         with urllib.request.urlopen(req, timeout=30) as resp:
             content_type = resp.headers.get("Content-Type", "")
             if "application/pdf" not in content_type:
@@ -91,7 +100,7 @@ def parse_url(url: str, source_id: str | None = None, html: str | None = None) -
 
     result = ParsedSource(source_id=source_id, source_type=SourceType.URL, source=url)
     try:
-        downloaded = html if html is not None else trafilatura.fetch_url(url)
+        downloaded = html if html is not None else trafilatura.fetch_url(url, config=_TRAFILATURA_CONFIG)
         if not downloaded:
             result.error = f"Failed to fetch URL: {url}"
             return result

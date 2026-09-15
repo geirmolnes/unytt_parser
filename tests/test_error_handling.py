@@ -5,7 +5,7 @@ from unytt_parser.parsers.text_parser import parse_text
 
 
 def test_url_fetch_failure_returns_error(monkeypatch):
-    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda _: None)
+    monkeypatch.setattr(url_parser.trafilatura, "fetch_url", lambda url, **kwargs: None)
 
     parsed = url_parser.parse_url("https://example.com/not-found")
 
