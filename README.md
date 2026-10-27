@@ -15,6 +15,7 @@ The parser currently focuses on one core output: Markdown-formatted text.
 - Auto-detect source type (`URL`, `PDF`, `MARKDOWN`, `TEXT`)
 - Return parsed markdown in `ParsedSource.markdown`
 - Keep metadata when available (`headline`, `byline`, `publication_date`, `publication`)
+- PDF tables come out as markdown tables (pymupdf-layout engine); PDF hyperlinks are not kept
 - Preserve raw PDF bytes in `ParsedSource.pdf_bytes` for archival
 - Transparently handle PDF URLs (content-type detection, download, PDF extraction)
 - Surface clear errors without dropping sources
@@ -47,7 +48,7 @@ unytt_parser/
   __main__.py               # CLI entrypoint (unytt-parse)
   parsers/
     url_parser.py           # URL parsing with trafilatura -> markdown (includes Labrador CMS fix + PDF URL detection)
-    pdf_parser.py           # PDF parsing with pymupdf4llm -> markdown (preserves raw bytes)
+    pdf_parser.py           # PDF parsing with pymupdf4llm + pymupdf-layout -> markdown with tables (preserves raw bytes; drops hyperlinks)
     markdown_parser.py      # Markdown input (file path or raw markdown string)
     text_parser.py          # Raw text passthrough as markdown
 tests/

@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# Importing pymupdf.layout before pymupdf4llm switches to_markdown to the ML
+# layout engine: real markdown tables and headings instead of flattened text.
+# Trade-off: it drops hyperlinks and is ~2x slower.
+import pymupdf.layout  # noqa: F401
 import pymupdf4llm
 
 from unytt_parser.models import ParsedSource, SourceType

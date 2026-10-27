@@ -1,3 +1,6 @@
+import pymupdf
+import pytest
+
 from unytt_parser.models import SourceType
 from unytt_parser.parsers import pdf_parser
 
@@ -50,3 +53,28 @@ def test_parse_pdf_missing_file(tmp_path):
     parsed = pdf_parser.parse_pdf(path)
 
     assert parsed.error.startswith(f"PDF parsing failed for {path}: [Errno 2]")
+
+
+@pytest.mark.parametrize(
+    "markdown, headline",
+    [
+        ("## **Innledning**\n\nTekst.", "Innledning"),
+        ("## **Navn på prosjektet** : Barnehagemilliardene\n", "Navn på prosjektet : Barnehagemilliardene"),
+        ("# __Tittel__\n", "Tittel"),
+        ("# Vanlig tittel\n", "Vanlig tittel"),
+        ("## ****\n\nTekst.", None),
+    ],
+    ids=["bold", "bold-prefix", "underscore-bold", "plain", "only-markers"],
+)
+def test_parse_pdf_headline_strips_bold_markers(monkeypatch, tmp_path, markdown, headline):
+    """Layout mode emits bold-wrapped headings; the headline should be plain text."""
+    monkeypatch.setattr(pdf_parser.pymupdf4llm, "to_markdown", lambda _: markdown)
+
+    parsed = pdf_parser.parse_pdf(_fake_pdf(tmp_path, "h.pdf"))
+
+    assert parsed.headline == headline
+
+
+def test_layout_engine_is_active():
+    """Regression: pymupdf-layout was a dependency for months but never imported, so it did nothing."""
+    assert pymupdf._get_layout is not None
