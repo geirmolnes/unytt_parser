@@ -11,17 +11,45 @@ from urllib.parse import urlparse
 import lxml.html
 import trafilatura
 from lxml.html import tostring as html_tostring
+from trafilatura.downloads import fetch_response
 from trafilatura.settings import DEFAULT_CONFIG
 
 from unytt_parser.models import ParsedSource, SourceType
 from unytt_parser.parsers.pdf_parser import parse_pdf
 
-# Bare "Mozilla/5.0" passes Cloudflare's bot check. trafilatura's default UA gets a
-# 403 JS challenge, and full browser UAs are rejected as a UA/TLS-fingerprint
-# mismatch (seen on arabnews.com).
+# Cloudflare bot rules disagree per site, so no single UA works everywhere.
+# arabnews.com 403s full browser UAs (UA/TLS-fingerprint mismatch) and
+# trafilatura's default, but passes a bare "Mozilla/5.0". gemini.no 403s exactly
+# that bare UA but passes the other two. Each is tried in order on a 403.
 _USER_AGENT = "Mozilla/5.0"
-_TRAFILATURA_CONFIG = deepcopy(DEFAULT_CONFIG)
-_TRAFILATURA_CONFIG.set("DEFAULT", "USER_AGENTS", _USER_AGENT)
+_BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+)
+
+
+def _config_with_user_agent(user_agent: str | None):
+    """trafilatura config sending `user_agent`; None keeps trafilatura's default."""
+    config = deepcopy(DEFAULT_CONFIG)
+    if user_agent:
+        config.set("DEFAULT", "USER_AGENTS", user_agent)
+    return config
+
+
+_FETCH_CONFIGS = [_config_with_user_agent(ua) for ua in (_USER_AGENT, _BROWSER_USER_AGENT, None)]
+
+
+def _fetch_html(url: str) -> str | None:
+    """Download a page, retrying with the next user agent when the site answers 403."""
+    response = None
+    for config in _FETCH_CONFIGS:
+        response = fetch_response(url, decode=True, config=config)
+        # Only a 403 means "wrong UA"; retrying timeouts or 404s just multiplies latency.
+        if response is None or response.status != 403:
+            break
+    if response is None or response.status != 200 or not response.data:
+        return None
+    return response.html
 
 
 def _extract_labrador_article(html: str) -> str | None:
@@ -100,7 +128,7 @@ def parse_url(url: str, source_id: str | None = None, html: str | None = None) -
 
     result = ParsedSource(source_id=source_id, source_type=SourceType.URL, source=url)
     try:
-        downloaded = html if html is not None else trafilatura.fetch_url(url, config=_TRAFILATURA_CONFIG)
+        downloaded = html if html is not None else _fetch_html(url)
         if not downloaded:
             result.error = f"Failed to fetch URL: {url}"
             return result
